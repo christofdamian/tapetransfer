@@ -132,25 +132,42 @@ termios.tcsetattr(stdinfd, termios.TCSANOW, newattr)
 oldflags = fcntl.fcntl(stdinfd, fcntl.F_GETFL)
 fcntl.fcntl(stdinfd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
 
+recording = False
+quiet = 0
+
+
 try:
     
-    while key != '\n':
+    while key != '\n' and quiet < 10:
         # Read data from device
         l, data = inp.read()
      
         if l:
-            wfile.writeframesraw(data)
-            audiomax = audioop.max(data, 2)
-            if audiomax > maxamp:
-                maxamp = audiomax
-            pbar.update(audiomax)
-
             rms = audioop.rms(data, 2) 
-            
-            try:
-                outp.write(data)
-            except alsaaudio.ALSAAudioError:
-                print "data",l
+
+            if rms > 20:
+                recording = True
+                quiet = 0
+            else:
+                quiet += 1
+
+
+            if recording:
+                wfile.writeframesraw(data)
+                                
+                audiomax = audioop.max(data, 2)
+                if audiomax > maxamp:
+                    maxamp = audiomax
+                pbar.update(audiomax)
+    
+                
+                try:
+                    outp.write(data)
+                except alsaaudio.ALSAAudioError:
+                    print "data",l
+                    
+            else:
+                pbar.seconds_elapsed = 0   
        
         # detect key
         try:
