@@ -138,14 +138,15 @@ quiet = 0
 
 try:
     
-    while key != '\n' and quiet < 10:
+    while key != '\n' and not (recording and quiet > 10):
+        
         # Read data from device
         l, data = inp.read()
      
         if l:
             rms = audioop.rms(data, 2) 
 
-            if rms > 20:
+            if rms > 100:
                 recording = True
                 quiet = 0
             else:
