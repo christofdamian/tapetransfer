@@ -143,7 +143,7 @@ try:
         # Read data from device
         l, data = inp.read()
      
-        if l:
+        if l > 0:
             rms = audioop.rms(data, 2) 
 
             if rms > 100:
@@ -168,7 +168,10 @@ try:
                     print "data",l
                     
             else:
-                pbar.seconds_elapsed = 0   
+                pbar.seconds_elapsed = 0  
+
+        if recording and l < 0:
+            print "\nl =",l 
        
         # detect key
         try:
