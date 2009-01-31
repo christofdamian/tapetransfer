@@ -81,7 +81,7 @@ parser.add_option("-v", "--verbose",
 
 # code from pyalsaaudio record demo, plys python FAQ material non non blocking 
 # keyboard detect under linux
-rate = 44100
+rate = 48000
 
 # open ALSA sound card device, non blocking
 if options.verbose:
@@ -135,10 +135,9 @@ fcntl.fcntl(stdinfd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
 recording = False
 quiet = 0
 
-
 try:
     
-    while key != '\n' and not (recording and quiet > 10):
+    while key != '\n' and not (recording and quiet > 30):
         
         # Read data from device
         l, data = inp.read()
@@ -146,9 +145,10 @@ try:
         if l > 0:
             rms = audioop.rms(data, 2) 
 
-            if rms > 100:
+            if rms > 150:
                 recording = True
                 quiet = 0
+                pbar.seconds_elapsed = 0  
             else:
                 quiet += 1
 
