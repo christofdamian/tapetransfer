@@ -7,24 +7,31 @@ class WavWriter(threading.Thread):
     def __init__(self, filename, rate, queue):
         threading.Thread.__init__(self)
 
-        self.__stop = False
-        self.wav = wave.open(filename, 'w')
-        self.wav.setparams((2, 2, rate, 0, 'NONE', ''))
-        self.maxqueue = 0
+        self.filename = filename
+        self.rate = rate
         self.queue = queue
 
+        self.__stop = False
+        self.maxqueue = 0
+
     def run(self):
+        wav = wave.open(self.filename, 'w')
+        wav.setparams((2, 2, self.rate, 0, 'NONE', ''))
+        
         while True:
             qsize = self.queue.qsize()
+ 
             if qsize == 0 and self.__stop:
                 break
             
             if qsize > self.maxqueue:
                 self.maxqueue = qsize 
+            
             block = self.queue.get(1)
-            self.wav.writeframesraw(block)
+            wav.writeframesraw(block)
             time.sleep(0.02)
-        self.wav.close()
+        
+        wav.close()
         
     def stop(self):
         self.__stop = True
