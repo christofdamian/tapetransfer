@@ -150,12 +150,14 @@ try:
             rms = audioop.rms(data, 2) 
 
             if rms > 150:
-                recording = True
                 quiet = 0
-                pbar.seconds_elapsed = 0  
             else:
                 quiet += 1
 
+            if quiet == 0 and not recording:
+                recording = True
+                pbar.start_time = None  
+                
 
             if recording:
                 queue.put(data,1) 
@@ -170,9 +172,6 @@ try:
                     outp.write(data)
                 except alsaaudio.ALSAAudioError:
                     print "data",l
-                    
-            else:
-                pbar.seconds_elapsed = 0  
 
         if recording and l < 0:
             print "\nl =",l 
