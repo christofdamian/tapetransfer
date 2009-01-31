@@ -18,19 +18,23 @@
 # duncan@zog.net.au
 #
 
-VERSION = 0.1
+VERSION = 0.2
 
 import alsaaudio
 import sys
 import time
-import wave
 import optparse
 import termios, fcntl, os
 import progressbar, audioop
+from Queue import Queue
+from Writer import WavWriter
 
 maxamp = 0
 rms = 0
 key = "none"
+queue = Queue(128)
+
+
 
 class MyProgressBar(progressbar.ProgressBar):
     '''extended progress bar'''
@@ -101,9 +105,6 @@ outp.setrate(rate)
 outp.setformat(alsaaudio.PCM_FORMAT_S16_LE)
 outp.setperiodsize(2000)
 
-# get output wav file ready, same params as the PCM input
-wfile = wave.open(args[0], 'w')
-wfile.setparams((2, 2, rate, 0, 'NONE', ''))
 
 if options.verbose:
     print "tapetransfer ", VERSION
@@ -135,6 +136,9 @@ fcntl.fcntl(stdinfd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
 recording = False
 quiet = 0
 
+writer = WavWriter(args[0], rate, queue)
+writer.start()
+
 try:
     
     while key != '\n' and not (recording and quiet > 30):
@@ -154,7 +158,7 @@ try:
 
 
             if recording:
-                wfile.writeframesraw(data)
+                queue.put(data,1) 
                                 
                 audiomax = audioop.max(data, 2)
                 if audiomax > maxamp:
@@ -182,14 +186,19 @@ try:
         except IOError:
             pass
 
-        time.sleep(0.02)
+        #time.sleep(0.01)
 
 finally:
     termios.tcsetattr(stdinfd, termios.TCSAFLUSH, oldterm)
     fcntl.fcntl(stdinfd, fcntl.F_SETFL, oldflags) 
 
 pbar.finish()
-wfile.close()
+
+writer.stop()
+writer.join()
+
 if options.verbose:
     print "wav file ", args[0], " written."
+
+print "maxqueue ", writer.maxqueue
 
