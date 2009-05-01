@@ -18,7 +18,7 @@
 # duncan@zog.net.au
 #
 
-VERSION = 0.2
+VERSION = 0.3
 
 import alsaaudio
 import sys
@@ -55,10 +55,10 @@ class MaxAmplitude(progressbar.ProgressBarWidget):
     '''Max amplitude widget'''
     def update(self, pbar):
         '''update widget'''
-        if maxamp == 32768:
+        if maxamp == pbar.maxval:
             return "CLIPPED!"
         else:
-            return "M:%2.2f%%" % (maxamp / 32768.0 * 100)
+            return "M:%2.2f%%" % (maxamp / pbar.maxval * 100)
 
 class TimeSinceStart(progressbar.ProgressBarWidget):
     '''time since start widget'''
@@ -77,15 +77,21 @@ class TimeSinceStart(progressbar.ProgressBarWidget):
 usage = "usage: %prog [options] outputfile.wav"
 parser = optparse.OptionParser(usage, version="%prog "+"%f" % VERSION)
 parser.add_option("-d", "--device", dest="device",
-                  help="ALSA device to use, e.g. default for default device",
-		  default="default")
+                  help="ALSA device to use for recording",
+		          default="default")
+parser.add_option("-m", "--monitor", dest="monitor",
+                  help="ALSA device to use for monitoring",
+                  default="default")
 parser.add_option("-v", "--verbose",
-                  action="store_true", dest="verbose")
+                  action="store_true", dest="verbose",
+                  help="display a bit more information")
+parser.add_option("-r", "--rate",
+                  dest="rate", type="int", default=48000,
+                  help="sample rate")
 (options, args) = parser.parse_args()
 
-# code from pyalsaaudio record demo, plys python FAQ material non non blocking 
-# keyboard detect under linux
-rate = 48000
+rate   = options.rate
+period = 2000
 
 # open ALSA sound card device, non blocking
 if options.verbose:
@@ -97,13 +103,16 @@ inp = alsaaudio.PCM(
 inp.setchannels(2)
 inp.setrate(rate)
 inp.setformat(alsaaudio.PCM_FORMAT_S16_LE)
-inp.setperiodsize(2000)
+inp.setperiodsize(period)
 
-outp = alsaaudio.PCM(alsaaudio.PCM_PLAYBACK, alsaaudio.PCM_NONBLOCK, "default")
+outp = alsaaudio.PCM(
+                    alsaaudio.PCM_PLAYBACK, 
+                    alsaaudio.PCM_NONBLOCK, 
+                    options.monitor)
 outp.setchannels(2)
 outp.setrate(rate)
 outp.setformat(alsaaudio.PCM_FORMAT_S16_LE)
-outp.setperiodsize(2000)
+outp.setperiodsize(period)
 
 
 if options.verbose:
@@ -113,7 +122,9 @@ if options.verbose:
     print "   <q>         to quit recording"
     print "   <space bar> to reset peak counter"
     print
-    print "recording to wav file ", args[0]
+    print "recording from", options.device, "to wav file", args[0]
+    print "rate   :", rate
+    print "monitor:", options.monitor
 
 widgets = [
     "[",RMS(),
@@ -121,7 +132,7 @@ widgets = [
     "][",MaxAmplitude(),
     "][", progressbar.Bar(marker=progressbar.RotatingMarker()),"]"]
 
-pbar = MyProgressBar(widgets=widgets, maxval=2**15 + 2).start()
+pbar = MyProgressBar(widgets=widgets, maxval=2**15).start()
 
 # set input into mon blocking key detect mode
 stdinfd = sys.stdin.fileno()
