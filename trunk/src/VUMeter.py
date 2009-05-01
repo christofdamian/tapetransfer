@@ -1,3 +1,7 @@
+'''
+progress bar class for the vumeter
+'''
+
 import progressbar
 import time
 
@@ -38,8 +42,8 @@ class MaxAmplitude(progressbar.ProgressBarWidget):
         '''update widget'''
         if pbar.maxamp == pbar.maxval:
             return "CLIPPED!"
-        else:
-            return "M:%2.2f%%" % (pbar.maxamp / pbar.maxval * 100)
+        
+        return "M:%2.2f%%" % (pbar.maxamp * 100.0 / pbar.maxval)
 
 class TimeSinceStart(progressbar.ProgressBarWidget):
     '''time since start widget'''

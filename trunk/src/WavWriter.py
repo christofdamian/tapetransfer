@@ -1,9 +1,14 @@
+'''
+wav file writer thread
+'''
+
 import wave
 import threading
 import Queue
 import time
 
 class WavWriter(threading.Thread):
+    '''wav file writer thread'''
     def __init__(self, filename, rate):
         threading.Thread.__init__(self)
 
@@ -15,6 +20,7 @@ class WavWriter(threading.Thread):
         self.maxqueue = 0
 
     def run(self):
+        '''run loop'''
         wav = wave.open(self.filename, 'w')
         wav.setparams((2, 2, self.rate, 0, 'NONE', ''))
         
@@ -33,9 +39,10 @@ class WavWriter(threading.Thread):
             except Queue.Empty:
                 time.sleep(0.01)
         
-            time.sleep(0.01);
+            time.sleep(0.01)
         
         wav.close()
         
     def stop(self):
+        '''set stop flag'''
         self.__stop = True

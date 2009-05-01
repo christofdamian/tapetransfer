@@ -77,16 +77,6 @@ inp.setrate(rate)
 inp.setformat(alsaaudio.PCM_FORMAT_S16_LE)
 inp.setperiodsize(period)
 
-outp = alsaaudio.PCM(
-                    alsaaudio.PCM_PLAYBACK, 
-                    alsaaudio.PCM_NORMAL, 
-                    options.monitor)
-outp.setchannels(2)
-outp.setrate(rate)
-outp.setformat(alsaaudio.PCM_FORMAT_S16_LE)
-outp.setperiodsize(period)
-
-
 if options.verbose:
     print "tapetransfer ", version
     print
@@ -117,7 +107,7 @@ quiet = 0
 writer = WavWriter.WavWriter(args[0], rate)
 writer.start()
 
-monitor = Monitor.Monitor(outp)
+monitor = Monitor.Monitor(options.monitor, rate, period)
 monitor.start()
 
 try:
