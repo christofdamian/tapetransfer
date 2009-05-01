@@ -141,7 +141,7 @@ writer.start()
 
 try:
     
-    while key != '\n' and not (recording and quiet > 30):
+    while key != '\n' and not (recording and quiet > 150):
         
         # Read data from device
         l, data = inp.read()
@@ -185,7 +185,7 @@ try:
         except IOError:
             pass
 
-        #time.sleep(0.01)
+        time.sleep(0.01)
 
 finally:
     termios.tcsetattr(stdinfd, termios.TCSAFLUSH, oldterm)
