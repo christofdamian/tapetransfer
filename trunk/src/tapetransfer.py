@@ -26,13 +26,13 @@ import time
 import optparse
 import termios, fcntl, os
 import progressbar, audioop
-from Queue import Queue
-from Writer import WavWriter
+import Queue
+import WavWriter
 
 maxamp = 0
 rms = 0
 key = "none"
-queue = Queue(128)
+queue = Queue.Queue(128)
 
 
 
@@ -110,7 +110,7 @@ if options.verbose:
     print "tapetransfer ", VERSION
     print
     print "controls:"
-    print "   <Enter>     to quit recording"
+    print "   <q>         to quit recording"
     print "   <space bar> to reset peak counter"
     print
     print "recording to wav file ", args[0]
@@ -136,12 +136,12 @@ fcntl.fcntl(stdinfd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
 recording = False
 quiet = 0
 
-writer = WavWriter(args[0], rate, queue)
+writer = WavWriter.WavWriter(args[0], rate, queue)
 writer.start()
 
 try:
     
-    while key != '\n' and not (recording and quiet > 150):
+    while key != 'q' and not (recording and quiet > 150):
         
         # Read data from device
         l, data = inp.read()
@@ -192,12 +192,10 @@ finally:
     fcntl.fcntl(stdinfd, fcntl.F_SETFL, oldflags) 
 
 pbar.finish()
-
 writer.stop()
 writer.join()
 
 if options.verbose:
     print "wav file ", args[0], " written."
-
-print "maxqueue ", writer.maxqueue
+    print "maxqueue ", writer.maxqueue
 

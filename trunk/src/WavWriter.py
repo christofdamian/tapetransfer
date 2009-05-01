@@ -1,6 +1,6 @@
 import wave
 import threading
-from Queue import Queue
+import Queue
 import time
 
 class WavWriter(threading.Thread):
@@ -20,15 +20,18 @@ class WavWriter(threading.Thread):
         
         while True:
             qsize = self.queue.qsize()
- 
+            
             if qsize == 0 and self.__stop:
                 break
             
             if qsize > self.maxqueue:
                 self.maxqueue = qsize 
             
-            block = self.queue.get(1)
-            wav.writeframesraw(block)
+            try: 
+                block = self.queue.get(False)
+                wav.writeframesraw(block)
+            except Queue.Empty:
+                pass
             time.sleep(0.02)
         
         wav.close()
