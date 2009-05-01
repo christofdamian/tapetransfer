@@ -1,81 +1,46 @@
 #!/usr/bin/python
-#
-# tapetransfer
-#
-# simple text mode audio recorder, with VU meter, and clip/max amplitude meter.
-#
-# copyright 2008 christof@damian.net
-# copyright 2006 duncan@zog.net.au
-# released under the GPL as per http://www.gnu.org/copyleft/gpl.html
-#
-# Needs pyalsaaudio : http://www.wilstrup.net/pyalsaaudio/
-# Needs progressbar : http://cheeseshop.python.org/pypi/progressbar
-#
-# to do: set sound card options (bit rate, etc) on command line
-# package for debian (including the components it needs)
-#
-# modified from: http://blog.zog.net.au/index.cgi/nerdy/kissrec/index.html by 
-# duncan@zog.net.au
-#
 
-VERSION = 0.3
+'''
+ tapetransfer
+
+ simple text mode audio recorder, with VU meter, and clip/max amplitude meter.
+
+ copyright 2008 christof@damian.net
+ copyright 2006 duncan@zog.net.au
+ released under the GPL as per http://www.gnu.org/copyleft/gpl.html
+
+ Needs pyalsaaudio : http://www.wilstrup.net/pyalsaaudio/
+ Needs progressbar : http://cheeseshop.python.org/pypi/progressbar
+
+ to do: set sound card options (bit rate, etc) on command line
+ package for debian (including the components it needs)
+
+ modified from: http://blog.zog.net.au/index.cgi/nerdy/kissrec/index.html by 
+ duncan@zog.net.au
+'''
+
+version = 0.3
 
 import alsaaudio
 import sys
 import time
 import optparse
 import termios, fcntl, os
-import progressbar, audioop
-import Queue
+import audioop
+
 import WavWriter
+import VUMeter
+import Monitor
 
 maxamp = 0
 rms = 0
-key = "none"
-queue = Queue.Queue(128)
-
-
-
-class MyProgressBar(progressbar.ProgressBar):
-    '''extended progress bar'''
-    def _need_update(self):
-        '''update progress bar if percentage or maxamp changed'''
-        if int(self.percentage()) != int(self.prev_percentage):
-            return True
-        return maxamp == 0
-
-
-class RMS(progressbar.ProgressBarWidget):
-    '''RMS display widget'''
-    def update(self, pbar):
-        '''update widget'''
-        return "R:%5d" % rms
-
-class MaxAmplitude(progressbar.ProgressBarWidget):
-    '''Max amplitude widget'''
-    def update(self, pbar):
-        '''update widget'''
-        if maxamp == pbar.maxval:
-            return "CLIPPED!"
-        else:
-            return "M:%2.2f%%" % (maxamp / pbar.maxval * 100)
-
-class TimeSinceStart(progressbar.ProgressBarWidget):
-    '''time since start widget'''
-    @staticmethod
-    def format_time(seconds):
-        '''nice time format'''
-        return time.strftime('%H:%M:%S', time.gmtime(seconds))
-
-    def update(self, pbar):
-        '''update widget'''
-        return 'T:%s' % self.format_time(pbar.seconds_elapsed)
+key = ''
 
 #
 # parse command line args
 #
 usage = "usage: %prog [options] outputfile.wav"
-parser = optparse.OptionParser(usage, version="%prog "+"%f" % VERSION)
+parser = optparse.OptionParser(usage, version="%prog "+"%f" % version)
 parser.add_option("-d", "--device", dest="device",
                   help="ALSA device to use for recording",
 		          default="default")
@@ -107,7 +72,7 @@ inp.setperiodsize(period)
 
 outp = alsaaudio.PCM(
                     alsaaudio.PCM_PLAYBACK, 
-                    alsaaudio.PCM_NONBLOCK, 
+                    alsaaudio.PCM_NORMAL, 
                     options.monitor)
 outp.setchannels(2)
 outp.setrate(rate)
@@ -116,7 +81,7 @@ outp.setperiodsize(period)
 
 
 if options.verbose:
-    print "tapetransfer ", VERSION
+    print "tapetransfer ", version
     print
     print "controls:"
     print "   <q>         to quit recording"
@@ -126,13 +91,8 @@ if options.verbose:
     print "rate   :", rate
     print "monitor:", options.monitor
 
-widgets = [
-    "[",RMS(),
-    "][",TimeSinceStart(),
-    "][",MaxAmplitude(),
-    "][", progressbar.Bar(marker=progressbar.RotatingMarker()),"]"]
 
-pbar = MyProgressBar(widgets=widgets, maxval=2**15).start()
+pbar = VUMeter.VUMeter(maxval=2**15).start()
 
 # set input into mon blocking key detect mode
 stdinfd = sys.stdin.fileno()
@@ -147,17 +107,20 @@ fcntl.fcntl(stdinfd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
 recording = False
 quiet = 0
 
-writer = WavWriter.WavWriter(args[0], rate, queue)
+writer = WavWriter.WavWriter(args[0], rate)
 writer.start()
+
+monitor = Monitor.Monitor(outp)
+monitor.start()
 
 try:
     
     while key != 'q' and not (recording and quiet > 150):
         
         # Read data from device
-        l, data = inp.read()
+        length, data = inp.read()
      
-        if l > 0:
+        if length > 0:
             rms = audioop.rms(data, 2) 
 
             if rms > 150:
@@ -171,21 +134,19 @@ try:
                 
 
             if recording:
-                queue.put(data,1) 
+                writer.queue.put(data, 1) 
+                monitor.queue.put(data, 1)
                                 
                 audiomax = audioop.max(data, 2)
                 if audiomax > maxamp:
                     maxamp = audiomax
+                pbar.rms    = rms
+                pbar.maxamp = maxamp
                 pbar.update(audiomax)
-    
                 
-                try:
-                    outp.write(data)
-                except alsaaudio.ALSAAudioError:
-                    print "data",l
 
-        if recording and l < 0:
-            print "\nl =",l 
+        if recording and length < 0:
+            print "\nl =", length 
        
         # detect key
         try:
@@ -194,7 +155,7 @@ try:
                 maxamp = 0
                 pbar.update(0)
         except IOError:
-            pass
+            key = ''
 
         time.sleep(0.01)
 
@@ -205,6 +166,8 @@ finally:
 pbar.finish()
 writer.stop()
 writer.join()
+monitor.stop()
+monitor.join()
 
 if options.verbose:
     print "wav file ", args[0], " written."

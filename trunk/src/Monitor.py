@@ -1,40 +1,31 @@
-import wave
 import threading
 import Queue
 import time
 
-class WavWriter(threading.Thread):
-    def __init__(self, filename, rate):
+class Monitor(threading.Thread):
+    def __init__(self, pcm):
         threading.Thread.__init__(self)
 
-        self.filename = filename
-        self.rate = rate
+        self.pcm = pcm
         self.queue = Queue.Queue(128)
 
         self.__stop = False
-        self.maxqueue = 0
 
     def run(self):
-        wav = wave.open(self.filename, 'w')
-        wav.setparams((2, 2, self.rate, 0, 'NONE', ''))
         
         while True:
             qsize = self.queue.qsize()
             
             if qsize == 0 and self.__stop:
                 break
-            
-            if qsize > self.maxqueue:
-                self.maxqueue = qsize 
-            
+                        
             try: 
                 block = self.queue.get(False)
-                wav.writeframesraw(block)
+                self.pcm.write(block)
             except Queue.Empty:
                 pass
-            time.sleep(0.02)
         
-        wav.close()
+        time.sleep(0.01)
         
     def stop(self):
         self.__stop = True
