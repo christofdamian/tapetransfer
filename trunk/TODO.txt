@@ -1,3 +1,1 @@
-* command line option for minimum empty space
 * command line option for minimum tape length
-* command line option for input + output device
