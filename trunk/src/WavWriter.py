@@ -31,8 +31,9 @@ class WavWriter(threading.Thread):
                 block = self.queue.get(False)
                 wav.writeframesraw(block)
             except Queue.Empty:
-                pass
-            time.sleep(0.02)
+                time.sleep(0.01)
+        
+            time.sleep(0.01);
         
         wav.close()
         

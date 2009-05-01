@@ -53,6 +53,13 @@ parser.add_option("-v", "--verbose",
 parser.add_option("-r", "--rate",
                   dest="rate", type="int", default=48000,
                   help="sample rate")
+parser.add_option("-s", "--silent",
+                  dest="silent_blocks", type="int", default=50,
+                  help="minimum number of silent blocks")
+parser.add_option("-l", "--level",
+                  dest="silent_rms", type="int", default=150,
+                  help="maximum RMS of silent blocks")
+
 (options, args) = parser.parse_args()
 
 rate   = options.rate
@@ -115,7 +122,7 @@ monitor.start()
 
 try:
     
-    while key != 'q' and not (recording and quiet > 150):
+    while key != 'q' and not (recording and quiet > options.silent_blocks):
         
         # Read data from device
         length, data = inp.read()
@@ -123,7 +130,7 @@ try:
         if length > 0:
             rms = audioop.rms(data, 2) 
 
-            if rms > 150:
+            if rms > options.silent_rms:
                 quiet = 0
             else:
                 quiet += 1

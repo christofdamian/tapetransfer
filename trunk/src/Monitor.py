@@ -22,10 +22,8 @@ class Monitor(threading.Thread):
             try: 
                 block = self.queue.get(False)
                 self.pcm.write(block)
-            except Queue.Empty:
-                pass
-        
-        time.sleep(0.01)
+            except Queue.Empty:        
+                time.sleep(0.01)
         
     def stop(self):
         self.__stop = True
