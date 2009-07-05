@@ -8,13 +8,11 @@ import time
 class VUMeter(progressbar.ProgressBar):
     '''extended progress bar'''
     
-    rms    = 0
     maxamp = 0
     
     def __init__(self, maxval):
         widgets = [
-          "[",RMS(),
-          "][",TimeSinceStart(),
+          "[",TimeSinceStart(),
           "][",MaxAmplitude(),
           "][", progressbar.Bar(marker=progressbar.RotatingMarker()),"]"]
         progressbar.ProgressBar.__init__(
@@ -29,18 +27,11 @@ class VUMeter(progressbar.ProgressBar):
             return True
         return self.maxamp == 0
 
-
-class RMS(progressbar.ProgressBarWidget):
-    '''RMS display widget'''
-    def update(self, pbar):
-        '''update widget'''
-        return "R:%5d" % pbar.rms
-
 class MaxAmplitude(progressbar.ProgressBarWidget):
     '''Max amplitude widget'''
     def update(self, pbar):
         '''update widget'''
-        if pbar.maxamp == pbar.maxval:
+        if pbar.maxamp >= pbar.maxval-1:
             return "CLIPPED!"
         
         return "M:%2.2f%%" % (pbar.maxamp * 100.0 / pbar.maxval)

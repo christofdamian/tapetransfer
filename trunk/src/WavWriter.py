@@ -14,7 +14,7 @@ class WavWriter(threading.Thread):
 
         self.filename = filename
         self.rate = rate
-        self.queue = Queue.Queue(128)
+        self.queue = Queue.Queue(256)
 
         self.__stop = False
         self.maxqueue = 0

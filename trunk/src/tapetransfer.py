@@ -89,7 +89,7 @@ if options.verbose:
     print "monitor:", options.monitor
 
 
-pbar = VUMeter.VUMeter(maxval=2**15).start()
+pbar = VUMeter.VUMeter(maxval=2**15+1).start()
 
 # set input into mon blocking key detect mode
 stdinfd = sys.stdin.fileno()
@@ -109,6 +109,8 @@ writer.start()
 
 monitor = Monitor.Monitor(options.monitor, rate, period)
 monitor.start()
+
+clipped_blocks = 0
 
 try:
     
@@ -136,9 +138,11 @@ try:
                                 
                 audiomax = audioop.max(data, 2)
                 if audiomax > maxamp:
-                    maxamp = audiomax
-                pbar.rms    = rms
-                pbar.maxamp = maxamp
+                    pbar.maxamp = maxamp = audiomax
+                
+                if audiomax == 2**15:
+                    clipped_blocks += 1
+     
                 pbar.update(audiomax)
                 
 
@@ -149,7 +153,7 @@ try:
         try:
             key = sys.stdin.read(1)
             if key == ' ':
-                maxamp = 0
+                pbar.maxamp = maxamp = 0
                 pbar.update(0)
         except IOError:
             key = ''
@@ -167,6 +171,6 @@ monitor.stop()
 monitor.join()
 
 if options.verbose:
-    print "wav file ", args[0], " written."
-    print "maxqueue ", writer.maxqueue
-
+    print "wav file", args[0], "written."
+    print "maxqueue       :", writer.maxqueue
+    print "clipped blocks :", clipped_blocks

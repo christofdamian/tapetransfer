@@ -18,7 +18,7 @@ class Monitor(threading.Thread):
         self.pcm.setrate(rate)
         self.pcm.setperiodsize(period)
 
-        self.queue = Queue.Queue(128)
+        self.queue = Queue.Queue(256)
 
         self.__stop = False
 
