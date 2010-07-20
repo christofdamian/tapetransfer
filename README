@@ -1,0 +1,17 @@
+The software will be a command line utility which records from audio input and directly writes into a compressed audio file. It also waits with the recording until it detects the first sounds and stops after a longer break. This allows for unattended audio tape transfers. 
+
+This is pretty much what I need, because my tape collection consists of DJ mixes from clubs or the radio. They are tapes of various lengths and have non stop music separated by silence at the beginning and the end. If you have music which has distinct songs, it probably will stop after the first song unless you set the silence between songs very high.
+
+I have written this once in C++ with the alsa and lame libraries. 
+
+I am going to rewrite it now in python to learn python and because the old version doesn't work with newer alsa versions. The python version also uses the alsa libraries.
+
+== Todo List ==
+  * allow splitting by song 
+  * set a minimum recording time in minutes
+
+== News ==
+=== May 2009 ===
+I updated the script quite a bit because I am digitizing tapes at the moment. At the moment it just writes WAV files, which you have to compress yourself. I found this works better for me at the moment, because I haven't quite decided on the final format yet.
+
+I also moved lots of the constants into the command line options so it is easier to tune if it doesn't work with some tapes.
